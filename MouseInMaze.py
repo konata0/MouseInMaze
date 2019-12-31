@@ -1,4 +1,6 @@
 import sys
+import os
+import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QUrl, QFileInfo
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -31,6 +33,10 @@ class MainWindow(object):
         self.button_parameter = None
         self.button_start_learn = None
         self.button_start_run = None
+        self.maze_list = None
+        # 缓存数据
+        self.maze_list_string = []
+        self.maze = None
 
     def setup_ui(self, main_window):
         self.main_window = main_window
@@ -125,6 +131,7 @@ class MainWindow(object):
         self.edit_max_step.setObjectName("edit_max_step")
         self.edit_max_step.setAlignment(QtCore.Qt.AlignCenter)
 
+        # button
         self.button_parameter = QtWidgets.QPushButton(self.centralWidget)
         self.button_parameter.setGeometry(QtCore.QRect(720, 400, 210, 30))
         self.button_parameter.setObjectName("button_add")
@@ -143,11 +150,11 @@ class MainWindow(object):
         self.button_start_run.setText("开始运行")
         self.button_start_run.clicked.connect(self.button_start_run_click)
 
-
-
-
-
-
+        # 迷宫选择
+        self.maze_list = QtWidgets.QListView(self.centralWidget)
+        self.maze_list.setGeometry(QtCore.QRect(720, 490, 210, 200))
+        self.maze_list.setObjectName("maze_list")
+        self.set_maze_list()
 
         self.main_window.setCentralWidget(self.centralWidget)
         self.retranslate_ui()
@@ -156,6 +163,18 @@ class MainWindow(object):
     def retranslate_ui(self):
         _translate = QtCore.QCoreApplication.translate
         self.main_window.setWindowTitle(_translate("mainWindow", "Mouse In Maze"))
+
+    def set_maze_list(self):
+        dirs = os.listdir("./maze")
+        self.maze_list_string = []
+        for file_name in dirs:
+            if file_name.endswith(".json"):
+                self.maze_list_string.append(file_name[0: -5])
+        slm = QtCore.QStringListModel()
+        slm.setStringList(self.maze_list_string)
+        self.maze_list.setModel(slm)
+        self.maze_list.clicked.connect(self.maze_list_click)
+        self.maze_list.doubleClicked.connect(self.maze_list_click)
 
     def button_parameter_click(self):
         pass
@@ -166,6 +185,34 @@ class MainWindow(object):
     def button_start_run_click(self):
         pass
 
+    def maze_list_click(self, index):
+        maze_file_name = "./maze/" + self.maze_list_string[index.row()] + ".json"
+        file = open(maze_file_name, encoding='utf-8')
+        temp_maze = np.array(json.loads(file.read()))
+        file.close()
+        flag = True
+        if temp_maze.ndim != 2:
+            flag = False
+        elif temp_maze.shape[0] != temp_maze.shape[1]:
+            flag = False
+        elif temp_maze.shape[0] < 3:
+            flag = False
+        else:
+            start_number = 0
+            end_number = 0
+            for element in temp_maze.flat:
+                if element == 1:
+                    start_number += 1
+                if element == 2:
+                    end_number += 1
+            if start_number != 1 or end_number != 1:
+                flag = False
+        if flag is False:
+            QMessageBox.information(self.main_window, "错误", "迷宫数据格式错误！", QMessageBox.Ok)
+            return
+        self.maze = temp_maze
+        print(self.maze)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -174,3 +221,4 @@ if __name__ == "__main__":
     ui.setup_ui(window)
     window.show()
     sys.exit(app.exec_())
+
