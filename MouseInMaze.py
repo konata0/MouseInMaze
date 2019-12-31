@@ -10,6 +10,7 @@ import json
 
 class MainWindow(object):
     def __init__(self):
+        # UI
         self.main_window = None
         self.centralWidget = None
         self.webView = None
@@ -44,7 +45,6 @@ class MainWindow(object):
         self.main_window.setWindowModality(QtCore.Qt.WindowModal)
         self.main_window.setFixedSize(960, 720)
         self.main_window.setStyleSheet("#mainWindow{background-color: #f6f6f6}")
-
         self.centralWidget = QtWidgets.QWidget(self.main_window)
         self.centralWidget.setObjectName("centralWidget")
 
@@ -190,6 +190,7 @@ class MainWindow(object):
         file = open(maze_file_name, encoding='utf-8')
         temp_maze = np.array(json.loads(file.read()))
         file.close()
+        # 迷宫数据格式内容验证
         flag = True
         if temp_maze.ndim != 2:
             flag = False
@@ -211,6 +212,11 @@ class MainWindow(object):
             QMessageBox.information(self.main_window, "错误", "迷宫数据格式错误！", QMessageBox.Ok)
             return
         self.maze = temp_maze
+        for i in range(0, self.maze.shape[0]):
+            for j in range(0, self.maze.shape[1]):
+                if self.maze[i, j] != -2 and self.maze[i, j] != -1 and self.maze[i, j] != 1 and self.maze[i, j] != 2:
+                    self.maze[i, j] = 0
+        print("已选择迷宫：")
         print(self.maze)
 
 
