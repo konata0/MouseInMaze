@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QUrl, QFileInfo
@@ -35,6 +36,11 @@ class MainWindow(object):
         self.button_start_learn = None
         self.button_start_run = None
         self.maze_list = None
+        # 奖励参数
+        self.r_normal = -1
+        self.r_wall = -30
+        self.r_fire = -50
+        self.r_cake = 500
         # 缓存数据
         self.maze_list_string = []
         self.maze = None
@@ -46,6 +52,11 @@ class MainWindow(object):
         self.random = 0.1
         self.epoch = 10
         self.max_step = 100
+        self.x = -1
+        self.y = -1
+        self.step = 0
+        self.q_table = None
+
 
     def setup_ui(self, main_window):
         self.main_window = main_window
@@ -283,10 +294,151 @@ class MainWindow(object):
         return
 
     def button_start_learn_click(self):
-        pass
+        if self.maze is None:
+            QMessageBox.information(self.main_window, "错误", "请先选择地图！", QMessageBox.Ok)
+            return
+        # 训练epoch次
+        for e in range(0, self.epoch):
+            # 回到起点位置
+            self.step = 0
+            for i in range(0, self.maze.shape[0]):
+                for j in range(0, self.maze.shape[1]):
+                    if self.maze[i, j] == 1:
+                        self.x = i
+                        self.y = j
+            action_record = []
+            # 训练主循环
+            while True:
+                self.step += 1
+                # 达到最大步数限制或者到达终点跳出
+                if self.step > self.max_step:
+                    break
+                if self.maze[self.x, self.y] == 2:
+                    break
+                # 根据Q表和当前参数获取action
+                # 0:up    1:down    2:left    3:right
+                action = self.get_action()
+                # 下一状态
+                x_next = self.x
+                y_next = self.y
+                if action == 0:
+                    x_next -= 1
+                elif action == 1:
+                    x_next += 1
+                elif action == 2:
+                    y_next -= 1
+                else:
+                    y_next += 1
+                # 回报判断（同时撞墙返回）
+                r = self.r_normal
+                flag = False
+                if x_next < 0:
+                    x_next = 0
+                    r = self.r_wall
+                    flag = True
+                elif x_next >= self.maze.shape[0]:
+                    x_next = self.maze.shape[0] - 1
+                    r = self.r_wall
+                    flag = True
+                elif y_next < 0:
+                    y_next = 0
+                    r = self.r_wall
+                    flag = True
+                elif y_next >= self.maze.shape[1]:
+                    y_next = self.maze.shape[1] - 1
+                    r = self.r_wall
+                    flag = True
+                elif self.maze[x_next, y_next] == -1:
+                    x_next = self.x
+                    y_next = self.y
+                    r = self.r_wall
+                    flag = True
+                else:
+                    pass
+                if flag is True:
+                    action_record.append(action + 10)
+                else:
+                    action_record.append(action)
+                    if self.maze[x_next, y_next] == -2 and self.check_fire_on():
+                        r = self.r_fire
+                    if self.maze[x_next, y_next] == 2:
+                        r = self.r_cake
+                # 更新Q表
+                t = self.gamma * (np.max(self.q_table[x_next, y_next]) - self.q_table[self.x, self.y, action])
+                self.q_table[self.x, self.y, action] += self.alpha * (r + t)
+                # 进入下一状态
+                self.x = x_next
+                self.y = y_next
+            # 一次训练完成，传action记录到动画显示，主界面等待相应时间
+            print("action:")
+            print(action_record)
+            #time.sleep(len(action_record) / self.anime_speed)
 
     def button_start_run_click(self):
-        pass
+        if self.maze is None:
+            QMessageBox.information(self.main_window, "错误", "请先选择地图！", QMessageBox.Ok)
+            return
+        # 回到起点位置
+        self.step = 0
+        for i in range(0, self.maze.shape[0]):
+            for j in range(0, self.maze.shape[1]):
+                if self.maze[i, j] == 1:
+                    self.x = i
+                    self.y = j
+        action_record = []
+        found = False
+        while True:
+            self.step += 1
+            # 达到最大步数限制或者到达终点跳出
+            if self.step > self.max_step:
+                break
+            if self.maze[self.x, self.y] == 2:
+                found = True
+                break
+            # 根据Q表获取action
+            # 0:up    1:down    2:left    3:right
+            action = np.argmax(self.q_table[self.x, self.y])
+            # 下一状态
+            x_next = self.x
+            y_next = self.y
+            if action == 0:
+                x_next -= 1
+            elif action == 1:
+                x_next += 1
+            elif action == 2:
+                y_next -= 1
+            else:
+                y_next += 1
+            # 判断撞墙返回
+            flag = False
+            if x_next < 0:
+                flag = True
+            elif x_next >= self.maze.shape[0]:
+                flag = True
+            elif y_next < 0:
+                flag = True
+            elif y_next >= self.maze.shape[1]:
+                flag = True
+            elif self.maze[x_next, y_next] == -1:
+                flag = True
+            else:
+                pass
+            if flag is True:
+                break
+            else:
+                self.x = x_next
+                self.y = y_next
+                action_record.append(action)
+            # 计算完成，传入动画显示，主界面延迟后显示结果
+            print("action:")
+            print(action_record)
+            #time.sleep(len(action_record) / self.anime_speed)
+            if found is True:
+                QMessageBox.information(self.main_window, "成功", "老鼠根据学到的知识找到了蛋糕！", QMessageBox.Ok)
+                return
+            else:
+                QMessageBox.information(self.main_window, "失败", "老鼠学习程度不够或是受最大步数限制，未找到蛋糕！", QMessageBox.Ok)
+                return
 
     def maze_list_click(self, index):
         maze_file_name = "./maze/" + self.maze_list_string[index.row()] + ".json"
@@ -321,6 +473,19 @@ class MainWindow(object):
                     self.maze[i, j] = 0
         print("已选择迷宫：")
         print(self.maze)
+        # 初始化Q表
+        self.q_table = np.zeros([self.maze.shape[0], self.maze.shape[1], 4])
+
+    def get_action(self):
+        # 随机选择
+        if np.random.rand(1)[0] < self.random:
+            return np.argmax(np.random.rand(4))
+        # 从Q表选择
+        else:
+            return np.argmax(self.q_table[self.x, self.y])
+
+    def check_fire_on(self):
+        return ((self.step - 1) % (self.fire_on + self.fire_off)) < self.fire_on
 
 
 if __name__ == "__main__":
