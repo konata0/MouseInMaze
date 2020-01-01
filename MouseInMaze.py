@@ -38,6 +38,14 @@ class MainWindow(object):
         # 缓存数据
         self.maze_list_string = []
         self.maze = None
+        self.fire_on = 2
+        self.fire_off = 2
+        self.anime_speed = 1
+        self.alpha = 0.5
+        self.gamma = 0.9
+        self.random = 0.1
+        self.epoch = 10
+        self.max_step = 100
 
     def setup_ui(self, main_window):
         self.main_window = main_window
@@ -131,11 +139,13 @@ class MainWindow(object):
         self.edit_max_step.setObjectName("edit_max_step")
         self.edit_max_step.setAlignment(QtCore.Qt.AlignCenter)
 
+        self.show_parameter()
+
         # button
         self.button_parameter = QtWidgets.QPushButton(self.centralWidget)
         self.button_parameter.setGeometry(QtCore.QRect(720, 400, 210, 30))
         self.button_parameter.setObjectName("button_add")
-        self.button_parameter.setText("修改参数并初始化")
+        self.button_parameter.setText("修改参数")
         self.button_parameter.clicked.connect(self.button_parameter_click)
 
         self.button_start_learn = QtWidgets.QPushButton(self.centralWidget)
@@ -164,6 +174,16 @@ class MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         self.main_window.setWindowTitle(_translate("mainWindow", "Mouse In Maze"))
 
+    def show_parameter(self):
+        self.edit_fire_on_period.setText(str(self.fire_on))
+        self.edit_fire_off_period.setText(str(self.fire_off))
+        self.edit_anime_speed.setText(str(self.anime_speed))
+        self.edit_alpha.setText(str(self.alpha))
+        self.edit_gamma.setText(str(self.gamma))
+        self.edit_random.setText(str(self.random))
+        self.edit_epoch.setText(str(self.epoch))
+        self.edit_max_step.setText(str(self.max_step))
+
     def set_maze_list(self):
         dirs = os.listdir("./maze")
         self.maze_list_string = []
@@ -177,7 +197,90 @@ class MainWindow(object):
         self.maze_list.doubleClicked.connect(self.maze_list_click)
 
     def button_parameter_click(self):
-        pass
+        temp_fire_on = self.edit_fire_on_period.text()
+        temp_fire_off = self.edit_fire_off_period.text()
+        temp_anime_speed = self.edit_anime_speed.text()
+        temp_alpha = self.edit_alpha.text()
+        temp_gamma = self.edit_gamma.text()
+        temp_random = self.edit_random.text()
+        temp_epoch = self.edit_epoch.text()
+        temp_max_step = self.edit_max_step.text()
+        try:
+            temp_fire_on = int(temp_fire_on)
+            if temp_fire_on < 0:
+                raise Exception("wrong range!", temp_fire_on)
+        except:
+            QMessageBox.information(self.main_window, "错误", "火焰生成时间必须为非负整数！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_fire_off = int(temp_fire_off)
+            if temp_fire_off < 0:
+                raise Exception("wrong range!", temp_fire_off)
+        except:
+            QMessageBox.information(self.main_window, "错误", "火焰停歇时间必须为非负整数！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_anime_speed = int(temp_anime_speed)
+            if temp_fire_off <= 0 or temp_anime_speed > 100:
+                raise Exception("wrong range!", temp_anime_speed)
+        except:
+            QMessageBox.information(self.main_window, "错误", "速度必须为不大于100的正整数！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_alpha = float(temp_alpha)
+            if temp_fire_off <= 0 or temp_alpha >= 1:
+                raise Exception("wrong range!", temp_anime_speed)
+        except:
+            QMessageBox.information(self.main_window, "错误", "学习速率大小必须在(0, 1)！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_gamma = float(temp_gamma)
+            if temp_gamma < 0 or temp_gamma > 1:
+                raise Exception("wrong range!", temp_gamma)
+        except:
+            QMessageBox.information(self.main_window, "错误", "折现因子大小必须在[0, 1]！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_random = float(temp_random)
+            if temp_random < 0 or temp_random > 1:
+                raise Exception("wrong range!", temp_gamma)
+        except:
+            QMessageBox.information(self.main_window, "错误", "随机概率大小必须在[0, 1]！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_epoch = int(temp_epoch)
+            if temp_epoch <= 0 or temp_epoch > 30:
+                raise Exception("wrong range!", temp_epoch)
+        except:
+            QMessageBox.information(self.main_window, "错误", "训练次数必须为[1, 30]的整数！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        try:
+            temp_max_step = int(temp_max_step)
+            if temp_max_step <= 0 or temp_max_step > 400:
+                raise Exception("wrong range!", temp_max_step)
+        except:
+            QMessageBox.information(self.main_window, "错误", "最大步数限制必须为[1, 400]的整数！", QMessageBox.Ok)
+            self.show_parameter()
+            return
+        self.fire_on = temp_fire_on
+        self.fire_off = temp_fire_off
+        self.anime_speed = temp_anime_speed
+        self.alpha = temp_alpha
+        self.gamma = temp_gamma
+        self.random = temp_random
+        self.epoch = temp_epoch
+        self.max_step = temp_max_step
+        self.show_parameter()
+        QMessageBox.information(self.main_window, "成功", "修改参数成功！", QMessageBox.Ok)
+        print("参数修改完成！")
+        return
 
     def button_start_learn_click(self):
         pass

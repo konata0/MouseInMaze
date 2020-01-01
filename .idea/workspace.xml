@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9063e23a-4566-4552-b106-1613dd772c03" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MouseInMaze.py" beforeDir="false" afterPath="$PROJECT_DIR$/MouseInMaze.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -15,10 +16,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/MouseInMaze.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-575">
-              <caret line="49" lean-forward="true" selection-start-line="49" selection-end-line="49" />
+            <state relative-caret-position="-652">
+              <caret line="286" lean-forward="true" selection-start-line="286" selection-end-line="286" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
+                <element signature="e#9084#12567#0" />
               </folding>
             </state>
           </provider>
@@ -67,6 +69,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -78,7 +81,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -147,8 +149,8 @@
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.30169973" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.33144477" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.28328612" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.25212464" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -164,10 +166,11 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/MouseInMaze.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-575">
-          <caret line="49" lean-forward="true" selection-start-line="49" selection-end-line="49" />
+        <state relative-caret-position="-652">
+          <caret line="286" lean-forward="true" selection-start-line="286" selection-end-line="286" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#9084#12567#0" />
           </folding>
         </state>
       </provider>
