@@ -52,9 +52,48 @@
         var frame = 0;
         var interval = 1000 / anime_speed / 16;
         // pixijs图像数据
+        var textures = {};
         var spriteMouse = null;
         var spriteCake = null;
         var spriteMazeDivList = [[]];
+        PIXI.loader.add("cake", img["cake"])
+          .add("floor", img["floor"])
+          .add("floor_fire_off", img["floor_fire_off"])
+          .add("floor_fire_on_0", img["floor_fire_on_0"])
+          .add("floor_fire_on_1", img["floor_fire_on_1"])
+          .add("mouse_left_0", img["mouse_left_0"])
+          .add("mouse_left_1", img["mouse_left_1"])
+          .add("mouse_left_fire_0", img["mouse_left_fire_0"])
+          .add("mouse_left_fire_1", img["mouse_left_fire_1"])
+          .add("mouse_right_0", img["mouse_right_0"])
+          .add("mouse_right_1", img["mouse_right_1"])
+          .add("mouse_right_fire_0", img["mouse_right_fire_0"])
+          .add("mouse_right_fire_1", img["mouse_right_fire_1"])
+          .add("wall", img["wall"])
+          .load(loadTexture);
+        function loadTexture(){
+          textures = {
+            cake: PIXI.loader.resources["cake"].texture,
+            floor: PIXI.loader.resources["floor"].texture,
+            floor_fire_off: PIXI.loader.resources["floor_fire_off"].texture,
+            floor_fire_on_0: PIXI.loader.resources["floor_fire_on_0"].texture,
+            floor_fire_on_1: PIXI.loader.resources["floor_fire_on_1"].texture,
+            mouse_left_0: PIXI.loader.resources["mouse_left_0"].texture,
+            mouse_left_1: PIXI.loader.resources["mouse_left_1"].texture,
+            mouse_left_fire_0: PIXI.loader.resources["mouse_left_fire_0"].texture,
+            mouse_left_fire_1: PIXI.loader.resources["mouse_left_fire_1"].texture,
+            mouse_right_0: PIXI.loader.resources["mouse_right_0"].texture,
+            mouse_right_1: PIXI.loader.resources["mouse_right_1"].texture,
+            mouse_right_fire_0: PIXI.loader.resources["mouse_right_fire_0"].texture,
+            mouse_right_fire_1: PIXI.loader.resources["mouse_right_fire_1"].texture,
+            wall: PIXI.loader.resources["wall"].texture,
+          };
+
+          testFunction();
+        }
+
+        
+        
 
 
         // 创建sprite
@@ -70,52 +109,95 @@
         }
         // 普通地板
         function createSpriteMazefloor(i, j){
-          let sprite = new PIXI.Sprite.from(img["floor"]);
+          let sprite = new PIXI.Sprite(textures["floor"]);
           sprite.height = divSize;
           sprite.width = divSize;
           sprite.position.y = i * divSize;
           sprite.position.x = j * divSize;
+          sprite.run = function(){};
           return sprite;
         }
         // 墙壁
         function createSpriteMazeWall(i, j){
-          let sprite = new PIXI.Sprite.from(img["wall"]);
+          let sprite = new PIXI.Sprite(textures["wall"]);
           sprite.height = divSize;
           sprite.width = divSize;
           sprite.position.y = i * divSize;
           sprite.position.x = j * divSize;
+          sprite.run = function(){};
           return sprite;
         }
         // 周期性火焰
         function createSpriteMazeFire(i, j){
-          let sprite = new PIXI.Sprite.from(img["floor_fire_off"]);
+          let sprite = new PIXI.Sprite(textures["floor_fire_off"]);
           sprite.height = divSize;
           sprite.width = divSize;
           sprite.position.y = i * divSize;
           sprite.position.x = j * divSize;
+          sprite.run = function(){
+            if(!checkFireOn()){
+              sprite.texture = textures["floor_fire_off"];
+            }else if(frame <= 7){
+              sprite.texture = textures["floor_fire_on_0"];
+            }else{
+              sprite.texture = textures["floor_fire_on_1"];
+            }
+          };
           return sprite;
         }
         // 蛋糕
         function createSpriteCake(i, j){
-          let sprite = new PIXI.Sprite.from(img["cake"]);
+          let sprite = new PIXI.Sprite(textures["cake"]);
           sprite.height = divSize;
           sprite.width = divSize;
           sprite.position.y = i * divSize;
           sprite.position.x = j * divSize;
+          sprite.run = function(){};
           return sprite;
         }
         // 老鼠
         function createSpriteMouse(i, j){
-          let sprite = new PIXI.Sprite.from(img["mouse_right_0"]);
+          let sprite = new PIXI.Sprite(textures["mouse_right_0"]);
           sprite.height = divSize;
           sprite.width = divSize;
           sprite.position.y = i * divSize;
           sprite.position.x = j * divSize;
           sprite.initX = j * divSize;
           sprite.initY = i * divSize;
+          sprite.resetPosition = function(){
+            sprite.position.x = sprite.initX;
+            sprite.position.y = sprite.initY;
+          }
+          sprite.run = function(){};
           return sprite;
         }
 
+        // 判断火焰是否开启
+        function checkFireOn(){
+          return ((step % (fire_on + fire_off)) < fire_on);
+        }
+
+      
+        // 初始化
+        function init(){
+          // 初始化屏幕
+          let windowWidth = window.innerWidth;
+          let windowHeight = window.innerHeight;
+          appSize = windowWidth > windowHeight? windowHeight: windowWidth;
+          appSize -= 2;
+          let marginTop = (windowHeight - appSize) / 2;
+          let marginLeft = (windowWidth - appSize) / 2;
+          app = new PIXI.Application({
+            width: appSize,
+            height: appSize,
+            antialias: true
+            });
+          app.renderer.backgroundColor = 0x1d3a37;
+          app.renderer.autoDensity = true;
+          document.body.appendChild(app.view);
+          canvasElement = document.getElementsByTagName("canvas")[0];
+          canvasElement.setAttribute("style", "margin: " + Math.floor(marginTop).toString() + "px 0 0 " + Math.floor(marginLeft).toString() + "px;");
+        }
         // 设置参数
         function setParameter(fire_on0, fire_off0, anime_speed0){
           fire_on = fire_on0;
@@ -147,34 +229,47 @@
           }
         }
 
-        // 初始化
-        function init(){
-          // 初始化屏幕
-          let windowWidth = window.innerWidth;
-          let windowHeight = window.innerHeight;
-          appSize = windowWidth > windowHeight? windowHeight: windowWidth;
-          appSize -= 2;
-          let marginTop = (windowHeight - appSize) / 2;
-          let marginLeft = (windowWidth - appSize) / 2;
-          app = new PIXI.Application({
-            width: appSize,
-            height: appSize,
-            antialias: true
-            });
-          app.renderer.backgroundColor = 0x1d3a37;
-          app.renderer.autoDensity = true;
-          document.body.appendChild(app.view);
-          canvasElement = document.getElementsByTagName("canvas")[0];
-          canvasElement.setAttribute("style", "margin: " + Math.floor(marginTop).toString() + "px 0 0 " + Math.floor(marginLeft).toString() + "px;");
+        // 根据传入数据进行动画（主循环）
+        function setAction(actionList0){
+          actionList = actionList0;
+          step = 0;
+          frame = 0;
+          spriteMouse.resetPosition();
+          animeLoop();
         }
+        function animeLoop(){
+          if(step >= actionList.length - 1){
+            actionList = [];
+            return;
+          }else{
+            setTimeout(() => {
+              animeLoop();
+            }, interval);
+          }
+          spriteMouse.run();
+          spriteCake.run();
+          spriteMazeDivList.forEach(r => {
+            r.forEach(s => {
+              s.run();
+            });
+          });
+          frame += 1;
+          if(frame >= 16){
+            frame = 0;
+            step += 1;
+          }
+          console.log(step.toString() + ";" + frame.toString());
+        }
+        
 
 
-
-
-
-        init();
-        //setParameter(5, 5, 10);
-        setMaze([[1,0,0],[0,-1,0],[-2,0,2]]);
+        function testFunction(){
+          init();
+          setParameter(2, 2, 1);
+          setMaze([[1,0,0],[0,-1,0],[-2,0,2]]);
+          setAction([3,3,1,1]);
+        }
+        
 
 
 
