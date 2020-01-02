@@ -234,10 +234,10 @@ class MainWindow(object):
             return
         try:
             temp_anime_speed = int(temp_anime_speed)
-            if temp_fire_off <= 0 or temp_anime_speed > 100:
+            if temp_fire_off <= 0 or temp_anime_speed > 10:
                 raise Exception("wrong range!", temp_anime_speed)
         except:
-            QMessageBox.information(self.main_window, "错误", "速度必须为不大于100的正整数！", QMessageBox.Ok)
+            QMessageBox.information(self.main_window, "错误", "速度必须为不大于10的正整数！", QMessageBox.Ok)
             self.show_parameter()
             return
         try:
