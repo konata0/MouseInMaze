@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import threading
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QUrl, QFileInfo
@@ -42,11 +43,13 @@ class MainWindow(object):
         self.r_fire = -50
         self.r_cake = 500
         # 缓存数据
+        self.running = False
+        self.anime_switch = True
         self.maze_list_string = []
         self.maze = None
         self.fire_on = 2
         self.fire_off = 2
-        self.anime_speed = 1
+        self.anime_speed = 5
         self.alpha = 0.5
         self.gamma = 0.9
         self.random = 0.1
@@ -208,6 +211,10 @@ class MainWindow(object):
         self.maze_list.doubleClicked.connect(self.maze_list_click)
 
     def button_parameter_click(self):
+        if self.running:
+            QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
+            self.show_parameter()
+            return
         temp_fire_on = self.edit_fire_on_period.text()
         temp_fire_off = self.edit_fire_off_period.text()
         temp_anime_speed = self.edit_anime_speed.text()
@@ -290,13 +297,20 @@ class MainWindow(object):
         self.max_step = temp_max_step
         self.show_parameter()
         QMessageBox.information(self.main_window, "成功", "修改参数成功！", QMessageBox.Ok)
-        print("参数修改完成！")
+        self.run_js_set_parameter()
         return
 
     def button_start_learn_click(self):
+        if self.running:
+            QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
+            return
         if self.maze is None:
             QMessageBox.information(self.main_window, "错误", "请先选择地图！", QMessageBox.Ok)
             return
+        threading.Thread(target=self.thread_learn).start()
+
+    def thread_learn(self):
+        self.running = True
         # 训练epoch次
         for e in range(0, self.epoch):
             # 回到起点位置
@@ -356,9 +370,9 @@ class MainWindow(object):
                 else:
                     pass
                 if flag is True:
-                    action_record.append(action + 10)
+                    action_record.append(int(action + 10))
                 else:
-                    action_record.append(action)
+                    action_record.append(int(action))
                     if self.maze[x_next, y_next] == -2 and self.check_fire_on():
                         r = self.r_fire
                     if self.maze[x_next, y_next] == 2:
@@ -370,14 +384,24 @@ class MainWindow(object):
                 self.x = x_next
                 self.y = y_next
             # 一次训练完成，传action记录到动画显示，主界面等待相应时间
-            print("action:")
-            print(action_record)
-            #time.sleep(len(action_record) / self.anime_speed)
+            if self.anime_switch:
+                self.run_js_set_action(action_record)
+                time.sleep(len(action_record) / self.anime_speed + 0.5)
+        self.run_js_alert("训练完成！")
+        self.running = False
+        return
 
     def button_start_run_click(self):
+        if self.running:
+            QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
+            return
         if self.maze is None:
             QMessageBox.information(self.main_window, "错误", "请先选择地图！", QMessageBox.Ok)
             return
+        threading.Thread(target=self.thread_run).start()
+
+    def thread_run(self):
+        self.running = True
         # 回到起点位置
         self.step = 0
         for i in range(0, self.maze.shape[0]):
@@ -390,14 +414,16 @@ class MainWindow(object):
         while True:
             self.step += 1
             # 达到最大步数限制或者到达终点跳出
-            if self.step > self.max_step:
+            if self.step >= self.maze.shape[0] * self.maze.shape[1]:
+                break
+            if self.step >= self.max_step:
                 break
             if self.maze[self.x, self.y] == 2:
                 found = True
                 break
             # 根据Q表获取action
             # 0:up    1:down    2:left    3:right
-            action = np.argmax(self.q_table[self.x, self.y])
+            action = int(np.argmax(self.q_table[self.x, self.y]))
             # 下一状态
             x_next = self.x
             y_next = self.y
@@ -429,18 +455,23 @@ class MainWindow(object):
                 self.x = x_next
                 self.y = y_next
                 action_record.append(action)
-            # 计算完成，传入动画显示，主界面延迟后显示结果
-            print("action:")
-            print(action_record)
-            #time.sleep(len(action_record) / self.anime_speed)
-            if found is True:
-                QMessageBox.information(self.main_window, "成功", "老鼠根据学到的知识找到了蛋糕！", QMessageBox.Ok)
-                return
-            else:
-                QMessageBox.information(self.main_window, "失败", "老鼠学习程度不够或是受最大步数限制，未找到蛋糕！", QMessageBox.Ok)
-                return
+        # 计算完成，传入动画显示，主界面延迟后显示结果
+        if self.anime_switch:
+            self.run_js_set_action(action_record)
+            time.sleep(len(action_record) / self.anime_speed + 0.5)
+        if found:
+            self.run_js_alert("成功找到！")
+        else:
+            self.run_js_alert("训练不足或受到最大步数限制限制，未能找到！")
+        self.running = False
+        return
+
+
 
     def maze_list_click(self, index):
+        if self.running:
+            QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
+            return
         maze_file_name = "./maze/" + self.maze_list_string[index.row()] + ".json"
         file = open(maze_file_name, encoding='utf-8')
         temp_maze = np.array(json.loads(file.read()))
@@ -471,8 +502,7 @@ class MainWindow(object):
             for j in range(0, self.maze.shape[1]):
                 if self.maze[i, j] != -2 and self.maze[i, j] != -1 and self.maze[i, j] != 1 and self.maze[i, j] != 2:
                     self.maze[i, j] = 0
-        print("已选择迷宫：")
-        print(self.maze)
+        self.run_js_set_maze()
         # 初始化Q表
         self.q_table = np.zeros([self.maze.shape[0], self.maze.shape[1], 4])
 
@@ -486,6 +516,24 @@ class MainWindow(object):
 
     def check_fire_on(self):
         return ((self.step - 1) % (self.fire_on + self.fire_off)) < self.fire_on
+
+    def run_js_set_maze(self):
+        parameter_string = json.dumps(self.maze.tolist(), ensure_ascii=False)
+        self.webView.page().runJavaScript("setMaze(" + parameter_string + ")")
+
+    def run_js_set_parameter(self):
+        js_string = "setParameter("
+        js_string += str(self.fire_on) + ","
+        js_string += str(self.fire_off) + ","
+        js_string += str(self.anime_speed) + ")"
+        self.webView.page().runJavaScript(js_string)
+
+    def run_js_set_action(self, action_list):
+        parameter_string = json.dumps(action_list, ensure_ascii=False)
+        self.webView.page().runJavaScript("setAction(" + parameter_string + ")")
+
+    def run_js_alert(self, string):
+        self.webView.page().runJavaScript("alert('" + string + "');")
 
 
 if __name__ == "__main__":
