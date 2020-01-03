@@ -3,6 +3,7 @@ import os
 import time
 import threading
 import numpy as np
+import math
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QUrl, QFileInfo
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -466,8 +467,6 @@ class MainWindow(object):
         self.running = False
         return
 
-
-
     def maze_list_click(self, index):
         if self.running:
             QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
@@ -504,12 +503,44 @@ class MainWindow(object):
                     self.maze[i, j] = 0
         self.run_js_set_maze()
         # 初始化Q表
+        self.init_q_table()
+
+    def init_q_table(self):
         self.q_table = np.zeros([self.maze.shape[0], self.maze.shape[1], 4])
+        for i in range(0, self.maze.shape[0]):
+            for j in range(0, self.maze.shape[1]):
+                for a in range(0, 4):
+                    ii = i
+                    jj = j
+                    if_hit_wall = False
+                    if a == 0:
+                        ii -= 1
+                    elif a == 1:
+                        ii += 1
+                    elif a == 2:
+                        jj -= 1
+                    else:
+                        jj += 1
+                    if ii < 0 or ii >= self.maze.shape[0]:
+                        if_hit_wall = True
+                    elif jj < 0 or jj >= self.maze.shape[1]:
+                        if_hit_wall = True
+                    elif self.maze[ii, jj] == -1:
+                        if_hit_wall = True
+                    else:
+                        pass
+                    if if_hit_wall:
+                        self.q_table[i, j, a] = float("-inf")
 
     def get_action(self):
         # 随机选择
         if np.random.rand(1)[0] < self.random:
-            return np.argmax(np.random.rand(4))
+            re = -1
+            while True:
+                re = np.argmax(np.random.rand(4))
+                if not math.isinf(self.q_table[self.x, self.y, re]):
+                    break
+            return re
         # 从Q表选择
         else:
             return np.argmax(self.q_table[self.x, self.y])
