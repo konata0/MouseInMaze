@@ -88,13 +88,8 @@
             mouse_right_fire_1: PIXI.loader.resources["mouse_right_fire_1"].texture,
             wall: PIXI.loader.resources["wall"].texture,
           };
-
-          testFunction();
+          myMain();
         }
-
-        
-        
-
 
         // 创建sprite
         // 迷宫DIV
@@ -159,16 +154,116 @@
         function createSpriteMouse(i, j){
           let sprite = new PIXI.Sprite(textures["mouse_right_0"]);
           sprite.height = divSize;
-          sprite.width = divSize;
-          sprite.position.y = i * divSize;
-          sprite.position.x = j * divSize;
-          sprite.initX = j * divSize;
-          sprite.initY = i * divSize;
-          sprite.resetPosition = function(){
-            sprite.position.x = sprite.initX;
-            sprite.position.y = sprite.initY;
+          sprite.width = divSize;  
+          sprite.i = i;
+          sprite.j = j;
+          sprite.i0 = i;
+          sprite.j0 = j;
+          sprite.i1 = i;
+          sprite.j1 = j;
+          sprite.iInit = i;
+          sprite.jInit = j;
+          sprite.directionIndex = 3;
+          sprite.updatePosition = function(){
+            sprite.position.y = sprite.i * divSize;
+            sprite.position.x = sprite.j * divSize;
           }
-          sprite.run = function(){};
+          sprite.updatePosition();
+          sprite.resetPosition = function(){
+            sprite.i = sprite.iInit;
+            sprite.j = sprite.jInit;
+            sprite.i0 = sprite.iInit;
+            sprite.j0 = sprite.jInit;
+            sprite.i1 = sprite.iInit;
+            sprite.j1 = sprite.jInit;
+            sprite.updatePosition();
+          }          
+          sprite.run = function(){
+            // 判断方向以及是否撞墙
+            let action = actionList[step];
+            let ifHitWall = false;
+            if(action >= 10){
+              ifHitWall = true;
+              action -= 10;
+            }
+
+            // 更新位置
+            // frame = 0，更新i1,j1
+            if(frame === 0){
+              if(action === 0){
+                sprite.i1 = sprite.i0 - 1;
+                sprite.j1 = sprite.j0;
+              }else if(action === 1){
+                sprite.i1 = sprite.i0 + 1;
+                sprite.j1 = sprite.j0;
+              }else if(action === 2){
+                sprite.i1 = sprite.i0;
+                sprite.j1 = sprite.j0 - 1;
+              }else{
+                sprite.i1 = sprite.i0;
+                sprite.j1 = sprite.j0 + 1;
+              }
+            }
+            // 根据frame和ifHitWall计算当前坐标
+            if(ifHitWall){
+              let tempFrame = frame;
+              if(tempFrame > 8){
+                tempFrame = 16 - tempFrame;
+              }
+              if(tempFrame > 3){
+                tempFrame = 3;
+              }
+              sprite.i = ((16 - tempFrame) * sprite.i0 + tempFrame * sprite.i1) / 16;
+              sprite.j = ((16 - tempFrame) * sprite.j0 + tempFrame * sprite.j1) / 16;
+              console.log("i:" + sprite.i.toString() + "; j:" + sprite.j.toString());
+              sprite.updatePosition();
+            }else{
+              sprite.i = ((16 - frame) * sprite.i0 + frame * sprite.i1) / 16;
+              sprite.j = ((16 - frame) * sprite.j0 + frame * sprite.j1) / 16;
+              sprite.updatePosition();
+            }
+            // frame = 15，更新i0,j0
+            if(frame === 15){
+              if(!ifHitWall){
+                sprite.i0 = sprite.i1;
+                sprite.j0 = sprite.j1;
+              }
+            }
+
+            // 更新纹理
+            // 方向
+            if(action === 3){
+              sprite.directionIndex = 3;
+            }
+            if(action === 2){
+              sprite.directionIndex = 2;
+            }
+            if((action === 2 || action === 3) && ifHitWall && frame >= 13){
+              sprite.directionIndex = 5 - action;
+            }
+            let directionString = (sprite.directionIndex === 2)? "_left": "_right";
+            // 触火撞墙状态
+            let mouseStateString = "";
+            if(!ifHitWall){
+              if ((maze[sprite.i0][sprite.j0] === -2) && (frame <= 7) && checkFireOn()){
+                mouseState = "_fire";
+              }
+              if ((maze[sprite.i1][sprite.j1] === -2) && (frame > 7) && checkFireOn()){
+                mouseState = "_fire";
+              }
+            }else{
+              if((frame <= 12) && (frame >= 4)){
+                mouseStateString = "_fire";
+              }
+            }
+            // 前行帧数
+            let frameString = "_0";
+            if(frame % 8 >= 4){
+              frameString = "_1";
+            }
+            // 修改纹理
+            sprite.texture = textures["mouse" + directionString + mouseStateString + frameString];
+          };
           return sprite;
         }
 
@@ -208,6 +303,7 @@
 
         // 设置地图
         function setMaze(mazeArray){
+          clearAll();
           maze = mazeArray;
           mazeSize = maze.length;
           divSize = appSize / mazeSize;
@@ -218,15 +314,15 @@
               spriteMazeDivList[i][j] = createSpriteMazeDiv(maze[i][j], i, j);      
               app.stage.addChild(spriteMazeDivList[i][j]);     
               if(maze[i][j] === 1){
-                spriteMouse = createSpriteMouse(i, j);
-                app.stage.addChild(spriteMouse);  
+                spriteMouse = createSpriteMouse(i, j); 
               }  
               if(maze[i][j] === 2){
-                spriteCake = createSpriteCake(i, j);
-                app.stage.addChild(spriteCake);  
+                spriteCake = createSpriteCake(i, j);  
               }  
             }
           }
+          app.stage.addChild(spriteCake);  
+          app.stage.addChild(spriteMouse);  
         }
 
         // 根据传入数据进行动画（主循环）
@@ -238,7 +334,7 @@
           animeLoop();
         }
         function animeLoop(){
-          if(step >= actionList.length - 1){
+          if(step >= actionList.length){
             actionList = [];
             return;
           }else{
@@ -258,25 +354,27 @@
             frame = 0;
             step += 1;
           }
-          console.log(step.toString() + ";" + frame.toString());
         }
-        
 
-
-        function testFunction(){
-          init();
-          setParameter(2, 2, 1);
-          setMaze([[1,0,0],[0,-1,0],[-2,0,2]]);
-          setAction([3,3,1,1]);
+        // 清除所有
+        function clearAll(){
+          app.stage.removeChild(spriteMouse);
+          app.stage.removeChild(spriteCake);
+          spriteMazeDivList.forEach(r => {
+            r.forEach(s => {
+              app.stage.removeChild(s);
+            });
+          });
+          spriteMouse = null;
+          spriteCake = null;
+          spriteMazeDivList = [[]];
         }
-        
 
+        // anime初始化主函数
+        function myMain(){
+          init();      
+        }
 
-
-
-
-
-      
       </script>
     </body>
 
