@@ -549,7 +549,9 @@ class MainWindow(object):
                     else:
                         pass
                     if if_hit_wall:
+                        # 撞墙设为负无穷
                         self.q_table[i, j, a] = float("-inf")
+                        pass
 
     def get_action(self):
         # 随机选择
