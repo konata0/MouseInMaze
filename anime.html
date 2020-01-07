@@ -215,7 +215,6 @@
               }
               sprite.i = ((16 - tempFrame) * sprite.i0 + tempFrame * sprite.i1) / 16;
               sprite.j = ((16 - tempFrame) * sprite.j0 + tempFrame * sprite.j1) / 16;
-              console.log("i:" + sprite.i.toString() + "; j:" + sprite.j.toString());
               sprite.updatePosition();
             }else{
               sprite.i = ((16 - frame) * sprite.i0 + frame * sprite.i1) / 16;

@@ -4,7 +4,7 @@ import time
 import threading
 import numpy as np
 import math
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QUrl, QFileInfo
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMessageBox
@@ -35,14 +35,15 @@ class MainWindow(object):
         self.label_max_step = None
         self.edit_max_step = None
         self.button_parameter = None
+        self.button_anime_switch = None
         self.button_start_learn = None
         self.button_start_run = None
         self.maze_list = None
         # 奖励参数
-        self.r_normal = -1
-        self.r_wall = -30
-        self.r_fire = -50
-        self.r_cake = 500
+        self.r_normal = -0.01
+        self.r_wall = -0.3
+        self.r_fire = -0.5
+        self.r_cake = 50
         # 缓存数据
         self.running = False
         self.anime_switch = True
@@ -158,10 +159,16 @@ class MainWindow(object):
 
         # button
         self.button_parameter = QtWidgets.QPushButton(self.centralWidget)
-        self.button_parameter.setGeometry(QtCore.QRect(720, 400, 210, 30))
+        self.button_parameter.setGeometry(QtCore.QRect(720, 400, 100, 30))
         self.button_parameter.setObjectName("button_add")
         self.button_parameter.setText("修改参数")
         self.button_parameter.clicked.connect(self.button_parameter_click)
+
+        self.button_anime_switch = QtWidgets.QPushButton(self.centralWidget)
+        self.button_anime_switch.setGeometry(QtCore.QRect(830, 400, 100, 30))
+        self.button_anime_switch.setObjectName("button_anime_switch")
+        self.button_anime_switch.setText("关闭动画")
+        self.button_anime_switch.clicked.connect(self.button_anime_switch_click)
 
         self.button_start_learn = QtWidgets.QPushButton(self.centralWidget)
         self.button_start_learn.setGeometry(QtCore.QRect(720, 440, 100, 30))
@@ -299,6 +306,19 @@ class MainWindow(object):
         self.show_parameter()
         QMessageBox.information(self.main_window, "成功", "修改参数成功！", QMessageBox.Ok)
         self.run_js_set_parameter()
+        return
+
+    def button_anime_switch_click(self):
+        if self.running:
+            QMessageBox.information(self.main_window, "错误", "程序运行中，禁止修改操作！", QMessageBox.Ok)
+            return
+        if self.anime_switch is True:
+            self.anime_switch = False
+            self.button_anime_switch.setText("开启动画")
+        else:
+            self.anime_switch = True
+            self.button_anime_switch.setText("关闭动画")
+        QMessageBox.information(self.main_window, "成功", "修改成功！", QMessageBox.Ok)
         return
 
     def button_start_learn_click(self):
@@ -457,9 +477,8 @@ class MainWindow(object):
                 self.y = y_next
                 action_record.append(action)
         # 计算完成，传入动画显示，主界面延迟后显示结果
-        if self.anime_switch:
-            self.run_js_set_action(action_record)
-            time.sleep(len(action_record) / self.anime_speed + 0.5)
+        self.run_js_set_action(action_record)
+        time.sleep(len(action_record) / self.anime_speed + 0.5)
         if found:
             self.run_js_alert("成功找到！")
         else:
